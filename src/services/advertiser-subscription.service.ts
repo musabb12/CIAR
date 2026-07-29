@@ -124,11 +124,11 @@ export async function submitSubscriptionPayment(
     paymentMethodId: string
     paymentDetails: Record<string, string>
     paymentNote?: string
+    planId?: string
   }
 ) {
-  const [config, store, paymentStore] = await Promise.all([
+  const [config, paymentStore] = await Promise.all([
     getSubscriptionPlansConfig(),
-    getUserSubscriptionsStore(),
     getSitePaymentMethodsStore(),
   ])
   const method = getPaymentMethodById(paymentStore, input.paymentMethodId)
@@ -140,11 +140,18 @@ export async function submitSubscriptionPayment(
     if (!validation.ok) throw new Error("VALIDATION_FAILED")
   }
 
-  const index = store.records.findIndex((r) => r.id === input.subscriptionId && r.userId === user.id)
-  let resolvedIndex = index
+  let store = await getUserSubscriptionsStore()
+  let resolvedIndex = store.records.findIndex((r) => r.id === input.subscriptionId && r.userId === user.id)
   if (resolvedIndex < 0) {
     resolvedIndex = store.records.findIndex((r) => r.userId === user.id && r.status === "pending")
   }
+
+  if (resolvedIndex < 0 && input.planId) {
+    await startSubscriptionCheckout(user, input.planId)
+    store = await getUserSubscriptionsStore()
+    resolvedIndex = store.records.findIndex((r) => r.userId === user.id && r.status === "pending")
+  }
+
   if (resolvedIndex < 0) throw new Error("SUBSCRIPTION_NOT_FOUND")
 
   const current = store.records[resolvedIndex]

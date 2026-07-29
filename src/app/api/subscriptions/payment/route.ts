@@ -12,6 +12,7 @@ const paymentSchema = z.object({
   paymentMethodId: z.string().min(1).max(80),
   paymentDetails: z.record(z.string().max(500)),
   paymentNote: z.string().max(1000).optional().default(""),
+  planId: z.string().min(1).max(80).optional(),
 })
 
 export async function POST(request: NextRequest) {
@@ -24,7 +25,10 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const parsed = paymentSchema.safeParse(body)
     if (!parsed.success) {
-      return NextResponse.json({ error: "Validation error", details: parsed.error.flatten() }, { status: 400 })
+      return NextResponse.json(
+        { error: "Validation error", code: "VALIDATION_FAILED", details: parsed.error.flatten() },
+        { status: 400, headers: NO_STORE }
+      )
     }
 
     const result = await submitSubscriptionPayment(user, parsed.data)
@@ -61,6 +65,12 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(
           { error: "Missing required payment fields", code: "VALIDATION_FAILED" },
           { status: 400, headers: NO_STORE }
+        )
+      }
+      if (error.message === "PLAN_NOT_FOUND") {
+        return NextResponse.json(
+          { error: "Plan not found", code: "PLAN_NOT_FOUND" },
+          { status: 404, headers: NO_STORE }
         )
       }
     }

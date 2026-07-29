@@ -44,6 +44,7 @@ import {
 import { getListingTypeConfig } from "@/lib/ad-listing-fields"
 import { toast } from "sonner"
 import { AdPricingQuoteBox } from "@/components/ads/ad-pricing-quote-box"
+import { CurrencySelect } from "@/components/ads/currency-select"
 import type { AdQuote } from "@/lib/ad-pricing"
 
 type AdProductDetailsFormProps = {
@@ -247,7 +248,11 @@ export function AdProductDetailsForm({
         </div>
         <div className="space-y-2">
           <Label>{isAr ? "العملة" : "Currency"}</Label>
-          <Input value={details.currency || "SAR"} onChange={(e) => patch({ currency: e.target.value })} />
+          <CurrencySelect
+            value={details.currency || "SAR"}
+            onChange={(code) => patch({ currency: code })}
+            isAr={isAr}
+          />
         </div>
         {typeConfig.showDiscount !== false ? (
           <div className="space-y-2">
