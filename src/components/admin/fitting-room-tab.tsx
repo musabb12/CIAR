@@ -327,6 +327,20 @@ export function FittingRoomTab() {
                   <Input value={field.type} disabled className="bg-muted/30" />
                 </div>
               </div>
+              {field.type === "select" && field.options?.length ? (
+                <div className="rounded-lg border border-dashed border-border/50 bg-muted/10 p-3">
+                  <p className="text-xs font-medium text-muted-foreground mb-2">
+                    {isAr ? "خيارات القائمة" : "Select options"}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {field.options.map((opt) => (
+                      <Badge key={opt.value} variant="secondary" className="rounded-full">
+                        {opt.labelAr} / {opt.labelEn}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
             </div>
           ))}
         </div>

@@ -2,19 +2,28 @@ import { z } from "zod"
 
 export const FITTING_ROOM_CONFIG_KEY = "fitting_room_config_v1"
 
+export type FittingRoomFieldOption = {
+  value: string
+  labelAr: string
+  labelEn: string
+}
+
 export type FittingRoomMeasurementField = {
   id: string
   labelAr: string
   labelEn: string
   unit: string
-  type: "number" | "text"
+  type: "number" | "text" | "select"
   placeholderAr?: string
   placeholderEn?: string
+  options?: FittingRoomFieldOption[]
   required: boolean
   enabled: boolean
   min?: number
   max?: number
 }
+
+export const FITTING_PROFILE_FIELD_IDS = ["age", "gender"] as const
 
 export type FittingRoomGarmentItem = {
   id: string
@@ -50,9 +59,19 @@ const measurementFieldSchema = z.object({
   labelAr: z.string().min(1).max(80),
   labelEn: z.string().min(1).max(80),
   unit: z.string().max(20).default(""),
-  type: z.enum(["number", "text"]).default("number"),
+  type: z.enum(["number", "text", "select"]).default("number"),
   placeholderAr: z.string().max(120).optional(),
   placeholderEn: z.string().max(120).optional(),
+  options: z
+    .array(
+      z.object({
+        value: z.string().min(1).max(40),
+        labelAr: z.string().min(1).max(80),
+        labelEn: z.string().min(1).max(80),
+      })
+    )
+    .max(20)
+    .optional(),
   required: z.boolean().default(false),
   enabled: z.boolean().default(true),
   min: z.number().optional(),
@@ -84,13 +103,87 @@ export const fittingRoomConfigSchema = z.object({
   pageTitleEn: z.string().max(160).default("Virtual Fitting Room"),
   pageSubtitleAr: z.string().max(500).default(""),
   pageSubtitleEn: z.string().max(500).default(""),
-  measurementFields: z.array(measurementFieldSchema).max(20).default([]),
+  measurementFields: z.array(measurementFieldSchema).max(25).default([]),
   garments: z.array(garmentSchema).max(100).default([]),
 })
 
+export function defaultGenderOptions(): FittingRoomFieldOption[] {
+  return [
+    { value: "male", labelAr: "رجل", labelEn: "Man" },
+    { value: "female", labelAr: "امرأة", labelEn: "Woman" },
+    { value: "young_female", labelAr: "فتاة", labelEn: "Young woman" },
+    { value: "boy", labelAr: "طفل", labelEn: "Boy" },
+    { value: "girl", labelAr: "طفلة", labelEn: "Girl" },
+  ]
+}
+
+export function splitMeasurementFields(fields: FittingRoomMeasurementField[]) {
+  const profileFields = fields.filter(
+    (f) => f.enabled && FITTING_PROFILE_FIELD_IDS.includes(f.id as (typeof FITTING_PROFILE_FIELD_IDS)[number])
+  )
+  const bodyFields = fields.filter(
+    (f) => f.enabled && !FITTING_PROFILE_FIELD_IDS.includes(f.id as (typeof FITTING_PROFILE_FIELD_IDS)[number])
+  )
+  return { profileFields, bodyFields }
+}
+
+export function normalizeMeasurementFields(
+  saved: FittingRoomMeasurementField[]
+): FittingRoomMeasurementField[] {
+  if (saved.length === 0) return defaultMeasurementFields()
+  return mergeMeasurementFields(saved)
+}
+
+function mergeMeasurementFields(saved: FittingRoomMeasurementField[]): FittingRoomMeasurementField[] {
+  const defaults = defaultMeasurementFields()
+  const byId = new Map(saved.map((f) => [f.id, f]))
+
+  for (const def of defaults) {
+    const existing = byId.get(def.id)
+    if (!existing) {
+      byId.set(def.id, def)
+      continue
+    }
+    if (def.id === "gender") {
+      byId.set(def.id, {
+        ...(existing ?? def),
+        type: "select",
+        enabled: existing?.enabled ?? def.enabled,
+        required: existing?.required ?? def.required,
+        labelAr: existing?.labelAr || def.labelAr,
+        labelEn: existing?.labelEn || def.labelEn,
+        options:
+          existing?.options && existing.options.length > 0 ? existing.options : def.options,
+      })
+      continue
+    }
+  }
+
+  const ordered: FittingRoomMeasurementField[] = []
+  for (const def of defaults) {
+    const field = byId.get(def.id)
+    if (field) ordered.push(field)
+  }
+  for (const field of saved) {
+    if (!defaults.some((d) => d.id === field.id)) ordered.push(field)
+  }
+  return ordered
+}
+
 export function defaultMeasurementFields(): FittingRoomMeasurementField[] {
   return [
-    { id: "height", labelAr: "الطول", labelEn: "Height", unit: "cm", type: "number", required: true, enabled: true, min: 120, max: 230 },
+    { id: "age", labelAr: "العمر", labelEn: "Age", unit: "", type: "number", required: true, enabled: true, min: 3, max: 99 },
+    {
+      id: "gender",
+      labelAr: "الجنس / الفئة",
+      labelEn: "Gender / category",
+      unit: "",
+      type: "select",
+      required: true,
+      enabled: true,
+      options: defaultGenderOptions(),
+    },
+    { id: "height", labelAr: "الطول", labelEn: "Height", unit: "cm", type: "number", required: true, enabled: true, min: 80, max: 230 },
     { id: "weight", labelAr: "الوزن", labelEn: "Weight", unit: "kg", type: "number", required: true, enabled: true, min: 30, max: 250 },
     { id: "chest", labelAr: "محيط الصدر", labelEn: "Chest", unit: "cm", type: "number", required: false, enabled: true, min: 60, max: 180 },
     { id: "waist", labelAr: "محيط الخصر", labelEn: "Waist", unit: "cm", type: "number", required: false, enabled: true, min: 50, max: 180 },
@@ -138,7 +231,9 @@ export function parseFittingRoomConfig(raw: string | undefined): FittingRoomConf
       ...defaults,
       ...parsed.data,
       measurementFields:
-        parsed.data.measurementFields.length > 0 ? parsed.data.measurementFields : defaults.measurementFields,
+        parsed.data.measurementFields.length > 0
+          ? mergeMeasurementFields(parsed.data.measurementFields)
+          : defaults.measurementFields,
     }
   } catch {
     return defaults

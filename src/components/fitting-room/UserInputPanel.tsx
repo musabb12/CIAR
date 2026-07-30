@@ -3,6 +3,7 @@
 import { Ruler, ScanLine } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { FittingRoomMeasurementField } from "@/lib/fitting-room-config"
+import { splitMeasurementFields } from "@/lib/fitting-room-config"
 import type { BodyMeasurements, UserImageState, UserInputMode } from "@/lib/virtual-fitting/types"
 import { ImageUploader } from "@/components/fitting-room/ImageUploader"
 import { BodyMeasurementsForm } from "@/components/fitting-room/BodyMeasurementsForm"
@@ -37,9 +38,24 @@ export function UserInputPanel({
   disabled,
 }: UserInputPanelProps) {
   const showTabs = allowPhotoUpload && allowMeasurements
+  const { profileFields, bodyFields } = splitMeasurementFields(measurementFields)
 
   return (
     <div className="space-y-4">
+      {profileFields.length > 0 ? (
+        <div className="space-y-3 rounded-xl border border-border/40 bg-muted/20 p-4">
+          <p className="text-sm font-semibold">{isAr ? "بياناتك الأساسية" : "Your profile"}</p>
+          <BodyMeasurementsForm
+            fields={profileFields}
+            values={measurements}
+            onChange={onMeasurementsChange}
+            errors={measurementErrors}
+            isAr={isAr}
+            disabled={disabled}
+          />
+        </div>
+      ) : null}
+
       {showTabs ? (
         <div className="grid grid-cols-2 gap-2 rounded-xl border border-border/40 bg-muted/20 p-1">
           <button
@@ -89,7 +105,7 @@ export function UserInputPanel({
               : "Enter your measurements instead of uploading a photo — we will suggest the best size"}
           </p>
           <BodyMeasurementsForm
-            fields={measurementFields}
+            fields={bodyFields}
             values={measurements}
             onChange={onMeasurementsChange}
             errors={measurementErrors}
