@@ -24,6 +24,7 @@ import {
   Film,
   Clapperboard,
   Scale,
+  ScanLine,
 } from "lucide-react"
 import {
   CommandDialog,
@@ -192,6 +193,14 @@ const COMMAND_ITEMS: CommandItemConfig[] = [
     icon: Megaphone,
     group: "pages",
     action: (nav) => nav?.("ads"),
+  },
+  {
+    id: "fitting-room",
+    labelKey: "admin.cmd_go_fitting_room",
+    fallback: "Go to Virtual Fitting Room",
+    icon: ScanLine,
+    group: "pages",
+    action: (nav) => nav?.("fitting-room"),
   },
   {
     id: "campaigns",

@@ -4,17 +4,7 @@ import { useCallback, useState } from "react"
 import { toast } from "sonner"
 import { useI18n } from "@/lib/i18n-context"
 import { useFittingRoom } from "@/lib/fitting-room-context"
-import { getDefaultFashionDemoAds, mergePublicAdsWithFashionDemos } from "@/lib/default-site-ads"
-import { collectFashionGarmentsFromAds } from "@/lib/virtual-fitting/types"
-
-function resolveFashionGarments(ads: unknown[], locale: string) {
-  const merged = mergePublicAdsWithFashionDemos(Array.isArray(ads) ? ads : [], locale)
-  let garments = collectFashionGarmentsFromAds(merged)
-  if (garments.length === 0) {
-    garments = collectFashionGarmentsFromAds(getDefaultFashionDemoAds(locale))
-  }
-  return garments
-}
+import type { FittingGarment } from "@/lib/virtual-fitting/types"
 
 export function useFashionFittingLauncher() {
   const { locale } = useI18n()
@@ -26,15 +16,20 @@ export function useFashionFittingLauncher() {
     async (initialGarmentId?: string) => {
       setLoading(true)
       try {
-        const res = await fetch(`/api/ads?locale=${locale}`, { cache: "no-store" })
+        const res = await fetch(`/api/fitting-room/config?locale=${locale}`, { cache: "no-store" })
         const data = await res.json().catch(() => ({}))
-        const garments = resolveFashionGarments(data.ads, locale)
+        const garments: FittingGarment[] = Array.isArray(data.garments) ? data.garments : []
+
+        if (data.enabled === false) {
+          toast.info(isAr ? "غرفة القياس غير متاحة حالياً" : "The fitting room is currently unavailable")
+          return false
+        }
 
         if (garments.length === 0) {
           toast.info(
             isAr
-              ? "لا توجد إعلانات أزياء بصور حالياً — أضف إعلاناً من نوع «أزياء» لتجربة القياس"
-              : "No fashion ads with images yet — add a fashion listing to try virtual fitting"
+              ? "لا توجد قطع أزياء متاحة — أضف قطعاً من لوحة التحكم أو إعلانات الأزياء"
+              : "No fashion items available — add garments in admin or publish fashion ads"
           )
           return false
         }
@@ -48,17 +43,6 @@ export function useFashionFittingLauncher() {
         })
         return true
       } catch {
-        const garments = resolveFashionGarments([], locale)
-        if (garments.length > 0) {
-          openFittingRoom({
-            garments,
-            initialGarmentId:
-              initialGarmentId && garments.some((g) => g.id === initialGarmentId)
-                ? initialGarmentId
-                : undefined,
-          })
-          return true
-        }
         toast.error(isAr ? "تعذّر فتح غرفة القياس" : "Could not open fitting room")
         return false
       } finally {

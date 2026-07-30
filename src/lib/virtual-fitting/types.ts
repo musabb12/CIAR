@@ -22,19 +22,29 @@ export type UserImageState = {
   height: number
 }
 
+export type BodyMeasurements = Record<string, string | number>
+
+export type UserInputMode = "photo" | "measurements"
+
 export type TryOnResult = {
   resultImageUrl: string
   provider: string
   processingMs: number
   mock?: boolean
+  inputMode?: UserInputMode
+  sizeRecommendation?: string
+  fitNotes?: string
+  measurementsSummary?: string
 }
 
 export type TryOnRequest = {
-  userImageBase64: string
-  userImageMimeType: string
+  inputMode: UserInputMode
   garmentImageUrl: string
   garmentId: string
   locale?: string
+  userImageBase64?: string
+  userImageMimeType?: "image/jpeg" | "image/png" | "image/webp"
+  bodyMeasurements?: BodyMeasurements
 }
 
 export type TryOnApiResponse = {

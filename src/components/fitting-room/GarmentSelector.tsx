@@ -95,7 +95,7 @@ export function GarmentSelector({
               whileTap={{ scale: disabled ? 1 : 0.98 }}
               className={cn(
                 "relative w-[140px] shrink-0 snap-start overflow-hidden rounded-2xl border text-start transition-all duration-300",
-                "bg-gradient-to-b from-background/80 to-muted/30 backdrop-blur-sm",
+                "bg-card",
                 selected
                   ? "border-[oklch(0.78_0.14_82/60%)] shadow-[0_0_24px_oklch(0.78_0.14_82/20%)] ring-2 ring-[oklch(0.78_0.14_82/35%)]"
                   : "border-border/40 hover:border-[oklch(0.78_0.14_82/30%)]",

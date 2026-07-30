@@ -24,6 +24,7 @@ const AboutPage = lazy(() => import("@/components/pages/about-page").then(m => (
 const ContactPage = lazy(() => import("@/components/pages/contact-page").then(m => ({ default: m.ContactPage })))
 const AdvertisePage = lazy(() => import("@/components/pages/advertise-page").then(m => ({ default: m.AdvertisePage })))
 const AdsPage = lazy(() => import("@/components/pages/ads-page").then(m => ({ default: m.AdsPage })))
+const FittingRoomPage = lazy(() => import("@/components/pages/fitting-room-page").then(m => ({ default: m.FittingRoomPage })))
 const PrivacyPolicyPage = lazy(() => import("@/components/pages/legal-page").then(m => ({ default: m.PrivacyPolicyPage })))
 const TermsPage = lazy(() => import("@/components/pages/legal-page").then(m => ({ default: m.TermsPage })))
 const SubscriptionPage = lazy(() => import("@/components/pages/subscription-page").then(m => ({ default: m.SubscriptionPage })))
@@ -288,6 +289,20 @@ export default function Page() {
             >
               <Suspense fallback={<PageSkeleton />}>
                 <AdsPage />
+              </Suspense>
+            </motion.div>
+          )}
+
+          {route.page === "fitting-room" && (
+            <motion.div
+              key="fitting-room"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <Suspense fallback={<PageSkeleton />}>
+                <FittingRoomPage />
               </Suspense>
             </motion.div>
           )}

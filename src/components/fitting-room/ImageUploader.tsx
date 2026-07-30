@@ -114,8 +114,8 @@ export function ImageUploader({ value, onChange, isAr, disabled }: ImageUploader
           onClick={() => !disabled && inputRef.current?.click()}
           className={cn(
             "group relative flex min-h-[280px] cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed p-6 text-center transition-all duration-300",
-            "border-[oklch(0.78_0.14_82/25%)] bg-gradient-to-br from-[oklch(0.78_0.14_82/8%)] via-background/40 to-transparent",
-            "backdrop-blur-md hover:border-[oklch(0.78_0.14_82/45%)] hover:shadow-[0_0_40px_oklch(0.78_0.14_82/12%)]",
+            "border-[oklch(0.78_0.14_82/25%)] bg-muted/30",
+            "hover:border-[oklch(0.78_0.14_82/45%)] hover:bg-muted/40",
             dragOver && "border-[oklch(0.78_0.14_82/60%)] scale-[1.01] shadow-[0_0_48px_oklch(0.78_0.14_82/18%)]",
             disabled && "pointer-events-none opacity-60"
           )}

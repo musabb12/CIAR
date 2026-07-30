@@ -33,7 +33,7 @@ export function FittingRoomPromo({ isAr, variant = "hero" }: FittingRoomPromoPro
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.15, duration: 0.5 }}
-      className="mx-auto mt-8 max-w-2xl overflow-hidden rounded-2xl border border-[oklch(0.78_0.14_82/30%)] bg-gradient-to-br from-[oklch(0.78_0.14_82/12%)] via-background/60 to-[oklch(0.72_0.12_75/8%)] p-5 sm:p-6 text-start shadow-[0_0_40px_oklch(0.78_0.14_82/10%)] backdrop-blur-md"
+      className="mx-auto mt-8 max-w-2xl overflow-hidden rounded-2xl border border-[oklch(0.78_0.14_82/30%)] bg-card p-5 sm:p-6 text-start shadow-md"
     >
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-2">

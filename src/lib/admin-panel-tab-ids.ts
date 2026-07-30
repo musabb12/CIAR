@@ -16,6 +16,7 @@ export const ADMIN_PANEL_TAB_IDS = [
   "legal-pages",
   "contacts",
   "ads",
+  "fitting-room",
   "subscriptions",
   "campaigns",
   "users",
