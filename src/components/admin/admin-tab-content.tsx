@@ -21,6 +21,9 @@ const HomeAboutBriefTab = lazy(() =>
 )
 const ContactsTab = lazy(() => import("@/components/admin/contacts-tab").then((m) => ({ default: m.ContactsTab })))
 const AdsTab = lazy(() => import("@/components/admin/ads-tab").then((m) => ({ default: m.AdsTab })))
+const FittingRoomTab = lazy(() =>
+  import("@/components/admin/fitting-room-tab").then((m) => ({ default: m.FittingRoomTab }))
+)
 const SubscriptionsTab = lazy(() => import("@/components/admin/subscriptions-tab").then((m) => ({ default: m.SubscriptionsTab })))
 const CampaignsTab = lazy(() => import("@/components/admin/campaigns-tab").then((m) => ({ default: m.CampaignsTab })))
 const UsersTab = lazy(() => import("@/components/admin/users-tab").then((m) => ({ default: m.UsersTab })))
@@ -86,6 +89,8 @@ export function AdminTabContent({ activeTab }: { activeTab: string }) {
       return <ContactsTab />
     case "ads":
       return <AdsTab />
+    case "fitting-room":
+      return <FittingRoomTab />
     case "subscriptions":
       return <SubscriptionsTab />
     case "campaigns":

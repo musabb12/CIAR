@@ -8,7 +8,7 @@ import { useRouter } from "@/lib/router-context"
 import { useFashionFittingLauncher } from "@/lib/virtual-fitting/use-fashion-fitting-launcher"
 import { cn } from "@/lib/utils"
 
-/** Floating try-on button — shown on ads page, stacked above the AI assistant FAB. */
+/** Floating try-on button — shown on the fitting room page, stacked above the AI assistant FAB. */
 export function FittingRoomFab() {
   const { locale } = useI18n()
   const { route } = useRouter()
@@ -33,7 +33,7 @@ export function FittingRoomFab() {
     }
   }, [])
 
-  if (route.page !== "ads") return null
+  if (route.page !== "fitting-room") return null
 
   return (
     <motion.div

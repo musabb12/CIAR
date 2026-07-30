@@ -30,6 +30,7 @@ import {
   PanelRightOpen,
   Heading,
   Scale,
+  ScanLine,
   type LucideIcon,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -78,6 +79,7 @@ const SIDEBAR_ITEMS: SidebarItem[] = [
   { id: "legal-pages", icon: Scale, labelKey: "admin.legal_pages", fallback: "الصفحات القانونية", group: "content" },
   { id: "contacts", icon: Mail, labelKey: "admin.contacts", fallback: "رسائل التواصل", group: "content" },
   { id: "ads", icon: Megaphone, labelKey: "admin.ads", fallback: "إدارة الإعلانات", group: "content" },
+  { id: "fitting-room", icon: ScanLine, labelKey: "admin.fitting_room", fallback: "غرفة القياس", group: "content" },
   { id: "subscriptions", icon: Crown, labelKey: "admin.subscriptions", fallback: "اشتراكات المُعلِنين", group: "content" },
   { id: "campaigns", icon: SendHorizonal, labelKey: "admin.campaigns", fallback: "حملات البريد", group: "content" },
   { id: "users", icon: Users, labelKey: "admin.users", fallback: "المستخدمون والصلاحيات", group: "content" },

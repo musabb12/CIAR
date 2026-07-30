@@ -27,6 +27,7 @@ const NAV_ITEMS: { key: string; route: PageRoute }[] = [
   { key: "nav.projects", route: { page: "projects" } },
   { key: "nav.ads", route: { page: "ads" } },
   { key: "nav.about", route: { page: "about" } },
+  { key: "nav.fitting_room", route: { page: "fitting-room" } },
   { key: "nav.contact", route: { page: "contact" } },
 ]
 

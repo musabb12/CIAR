@@ -1,4 +1,9 @@
 import type { TryOnRequest, TryOnResult } from "@/lib/virtual-fitting/types"
+import {
+  formatMeasurementsSummary,
+  recommendGarmentSize,
+} from "@/lib/virtual-fitting/size-recommendation"
+import { resolvePublicFittingGarments } from "@/services/fitting-room.service"
 
 export type FittingProvider = "mock" | "fashn" | "replicate"
 
@@ -16,20 +21,40 @@ async function delay(ms: number) {
   await new Promise((r) => setTimeout(r, ms))
 }
 
-async function runMockTryOn(input: TryOnRequest): Promise<TryOnResult> {
+async function runMockTryOn(input: TryOnRequest, garmentSizes: string[] = []): Promise<TryOnResult> {
   const started = Date.now()
   await delay(1800 + Math.random() * 1200)
+
+  if (input.inputMode === "measurements" && input.bodyMeasurements) {
+    const isAr = input.locale === "ar"
+    const { size, notes } = recommendGarmentSize(input.bodyMeasurements, garmentSizes)
+    return {
+      resultImageUrl: input.garmentImageUrl,
+      provider: "mock",
+      processingMs: Date.now() - started,
+      mock: true,
+      inputMode: "measurements",
+      sizeRecommendation: size,
+      fitNotes: notes,
+      measurementsSummary: formatMeasurementsSummary(input.bodyMeasurements, isAr),
+    }
+  }
+
   return {
-    resultImageUrl: dataUrl(input.userImageMimeType, input.userImageBase64),
+    resultImageUrl: dataUrl(input.userImageMimeType || "image/jpeg", input.userImageBase64 || ""),
     provider: "mock",
     processingMs: Date.now() - started,
     mock: true,
+    inputMode: "photo",
   }
 }
 
 async function runFashnTryOn(input: TryOnRequest): Promise<TryOnResult> {
   if (!FASHN_API_KEY) {
     throw new Error("FASHN_API_KEY not configured")
+  }
+  if (!input.userImageBase64 || !input.userImageMimeType) {
+    throw new Error("Photo required for Fashn provider")
   }
 
   const started = Date.now()
@@ -66,6 +91,9 @@ async function runFashnTryOn(input: TryOnRequest): Promise<TryOnResult> {
 async function runReplicateTryOn(input: TryOnRequest): Promise<TryOnResult> {
   if (!REPLICATE_API_TOKEN) {
     throw new Error("REPLICATE_API_TOKEN not configured")
+  }
+  if (!input.userImageBase64 || !input.userImageMimeType) {
+    throw new Error("Photo required for Replicate provider")
   }
 
   const started = Date.now()
@@ -131,23 +159,34 @@ async function runReplicateTryOn(input: TryOnRequest): Promise<TryOnResult> {
 
 export async function processVirtualTryOn(input: TryOnRequest): Promise<TryOnResult> {
   const provider = DEFAULT_PROVIDER
+  let garmentSizes: string[] = []
+  try {
+    const { garments } = await resolvePublicFittingGarments(input.locale)
+    garmentSizes = garments.find((g) => g.id === input.garmentId)?.sizes || []
+  } catch {
+    garmentSizes = []
+  }
+
+  if (input.inputMode === "measurements") {
+    return runMockTryOn(input, garmentSizes)
+  }
 
   switch (provider) {
     case "fashn":
       try {
         return await runFashnTryOn(input)
       } catch {
-        return runMockTryOn(input)
+        return runMockTryOn(input, garmentSizes)
       }
     case "replicate":
       try {
         return await runReplicateTryOn(input)
       } catch {
-        return runMockTryOn(input)
+        return runMockTryOn(input, garmentSizes)
       }
     case "mock":
     default:
-      return runMockTryOn(input)
+      return runMockTryOn(input, garmentSizes)
   }
 }
 

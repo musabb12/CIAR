@@ -8,6 +8,7 @@ export type PageRoute =
   | { page: "project"; slug: string }
   | { page: "platform"; slug: string }
   | { page: "about" }
+  | { page: "fitting-room" }
   | { page: "contact" }
   | { page: "advertise" }
   | { page: "ads" }
@@ -46,6 +47,7 @@ function parseLocationToRoute(): PageRoute {
   if (hash.startsWith("/project/")) return { page: "project", slug: hash.slice(9) }
   if (hash.startsWith("/platform/")) return { page: "platform", slug: hash.slice(10) }
   if (hash === "/about") return { page: "about" }
+  if (hash === "/fitting-room") return { page: "fitting-room" }
   if (hash === "/contact") return { page: "contact" }
   if (hash === "/advertise") return { page: "advertise" }
   if (hash === "/ads") return { page: "ads" }
@@ -124,6 +126,9 @@ export function RouterProvider({ children }: { children: React.ReactNode }) {
         break
       case "about":
         hash = "/about"
+        break
+      case "fitting-room":
+        hash = "/fitting-room"
         break
       case "contact":
         hash = "/contact"

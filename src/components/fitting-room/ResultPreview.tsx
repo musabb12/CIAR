@@ -1,7 +1,7 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { Download, RefreshCw, Sparkles } from "lucide-react"
+import { Download, RefreshCw, Ruler, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import type { FittingGarment, TryOnResult, UserImageState } from "@/lib/virtual-fitting/types"
@@ -69,7 +69,7 @@ export function ResultPreview({ result, userImage, garment, isAr, onRetry }: Res
           ) : null}
         </div>
 
-        <div className="space-y-4 rounded-2xl border border-border/40 bg-muted/10 p-4 backdrop-blur-sm">
+        <div className="space-y-4 rounded-2xl border border-border/40 bg-card p-4">
           {garment ? (
             <div>
               <p className="text-xs text-muted-foreground">{isAr ? "القطعة" : "Garment"}</p>
@@ -79,6 +79,26 @@ export function ResultPreview({ result, userImage, garment, isAr, onRetry }: Res
                   {isAr ? "المقاسات:" : "Sizes:"} {garment.sizes.join(", ")}
                 </p>
               ) : null}
+            </div>
+          ) : null}
+
+          {result.inputMode === "measurements" && result.sizeRecommendation ? (
+            <div className="rounded-xl border border-[oklch(0.78_0.14_82/25%)] bg-[oklch(0.78_0.14_82/8%)] p-4">
+              <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                <Ruler className="h-3.5 w-3.5" />
+                {isAr ? "توصية المقاس" : "Size recommendation"}
+              </p>
+              <p className="mt-1 text-2xl font-bold">{result.sizeRecommendation}</p>
+              {result.fitNotes ? (
+                <p className="mt-2 text-xs text-muted-foreground">{result.fitNotes}</p>
+              ) : null}
+            </div>
+          ) : null}
+
+          {result.measurementsSummary ? (
+            <div>
+              <p className="text-xs text-muted-foreground mb-1">{isAr ? "القياسات المدخلة" : "Entered measurements"}</p>
+              <p className="text-sm">{result.measurementsSummary}</p>
             </div>
           ) : null}
 

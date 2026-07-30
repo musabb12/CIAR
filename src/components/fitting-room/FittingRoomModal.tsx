@@ -1,18 +1,26 @@
 "use client"
 
 import { AnimatePresence, motion } from "framer-motion"
-import { Loader2, ScanFace, Sparkles, Wand2, X } from "lucide-react"
+import { Loader2, Ruler, ScanFace, Sparkles, Wand2, X } from "lucide-react"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useFittingRoom } from "@/lib/fitting-room-context"
 import { useI18n } from "@/lib/i18n-context"
 import { cn } from "@/lib/utils"
-import { ImageUploader } from "@/components/fitting-room/ImageUploader"
 import { GarmentSelector } from "@/components/fitting-room/GarmentSelector"
 import { ResultPreview } from "@/components/fitting-room/ResultPreview"
+import { UserInputPanel } from "@/components/fitting-room/UserInputPanel"
 
-function ProcessingPanel({ progress, isAr }: { progress: number; isAr: boolean }) {
+function ProcessingPanel({
+  progress,
+  isAr,
+  inputMode,
+}: {
+  progress: number
+  isAr: boolean
+  inputMode: "photo" | "measurements"
+}) {
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -31,9 +39,13 @@ function ProcessingPanel({ progress, isAr }: { progress: number; isAr: boolean }
         {isAr ? "جاري إنشاء القياس الافتراضي…" : "Creating your virtual fit…"}
       </p>
       <p className="mt-2 max-w-sm text-sm text-muted-foreground">
-        {isAr
-          ? "الذكاء الاصطناعي يدمج قطعة الملابس مع صورتك — قد يستغرق ذلك لحظات"
-          : "AI is blending the garment with your photo — this may take a moment"}
+        {inputMode === "measurements"
+          ? isAr
+            ? "نحلل قياساتك ونقترح المقاس المناسب — قد يستغرق ذلك لحظات"
+            : "Analyzing your measurements to suggest the best fit — this may take a moment"
+          : isAr
+            ? "الذكاء الاصطناعي يدمج قطعة الملابس مع صورتك — قد يستغرق ذلك لحظات"
+            : "AI is blending the garment with your photo — this may take a moment"}
       </p>
 
       <div className="mt-8 w-full max-w-md">
@@ -80,6 +92,12 @@ export function FittingRoomModal() {
     selectGarment,
     userImage,
     setUserImage,
+    inputMode,
+    setInputMode,
+    bodyMeasurements,
+    setBodyMeasurements,
+    measurementErrors,
+    roomConfig,
     status,
     progress,
     result,
@@ -89,26 +107,22 @@ export function FittingRoomModal() {
 
   const isProcessing = status === "uploading" || status === "processing"
   const showResult = status === "completed" && result
+  const canStart =
+    selectedGarment &&
+    (inputMode === "photo" ? Boolean(userImage) : roomConfig.allowMeasurements)
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && closeFittingRoom()}>
       <DialogContent
         showCloseButton={false}
         className={cn(
-          "max-w-[min(1100px,calc(100vw-1rem))] gap-0 overflow-hidden border-white/10 p-0",
-          "bg-gradient-to-br from-background/95 via-background/90 to-[oklch(0.78_0.14_82/6%)]",
-          "backdrop-blur-2xl shadow-[0_0_80px_oklch(0.78_0.14_82/12%)]",
-          "dark:from-background/98 dark:via-background/95 dark:to-[oklch(0.78_0.14_82/8%)]",
+          "fitting-room-dialog max-w-[min(1100px,calc(100vw-1rem))] gap-0 overflow-hidden border-border p-0",
+          "bg-background shadow-2xl",
           "sm:max-w-[min(1100px,calc(100vw-2rem))] max-h-[min(92vh,900px)]"
         )}
       >
-        <div className="pointer-events-none absolute inset-0 overflow-hidden">
-          <div className="absolute -top-24 -end-24 h-64 w-64 rounded-full bg-[oklch(0.78_0.14_82/12%)] blur-3xl" />
-          <div className="absolute -bottom-32 -start-16 h-72 w-72 rounded-full bg-[oklch(0.72_0.12_75/10%)] blur-3xl" />
-        </div>
-
-        <div className="relative flex max-h-[min(92vh,900px)] flex-col">
-          <header className="flex shrink-0 items-start justify-between gap-4 border-b border-white/10 px-5 py-4 sm:px-6">
+        <div className="relative flex max-h-[min(92vh,900px)] flex-col bg-background">
+          <header className="flex shrink-0 items-start justify-between gap-4 border-b border-border bg-background px-5 py-4 sm:px-6">
             <div className="space-y-1">
               <div className="flex flex-wrap items-center gap-2">
                 <Badge variant="outline" className="rounded-full border-[oklch(0.78_0.14_82/35%)] bg-[oklch(0.78_0.14_82/8%)]">
@@ -121,8 +135,8 @@ export function FittingRoomModal() {
               </div>
               <p className="text-xs sm:text-sm text-muted-foreground max-w-xl">
                 {isAr
-                  ? "ارفع صورتك، اختر قطعة أزياء، وشاهد النتيجة بتقنية الذكاء الاصطناعي"
-                  : "Upload your photo, pick a fashion piece, and preview the AI-powered result"}
+                  ? "ارفع صورتك أو أدخل قياساتك، اختر قطعة أزياء، وشاهد النتيجة"
+                  : "Upload your photo or enter measurements, pick a garment, and preview the result"}
               </p>
             </div>
             <Button
@@ -136,10 +150,10 @@ export function FittingRoomModal() {
             </Button>
           </header>
 
-          <div className="flex-1 overflow-y-auto px-5 py-5 sm:px-6 sm:py-6">
+          <div className="flex-1 overflow-y-auto bg-background px-5 py-5 sm:px-6 sm:py-6">
             <AnimatePresence mode="wait">
               {isProcessing ? (
-                <ProcessingPanel key="processing" progress={progress} isAr={isAr} />
+                <ProcessingPanel key="processing" progress={progress} isAr={isAr} inputMode={inputMode} />
               ) : showResult && result ? (
                 <ResultPreview
                   key="result"
@@ -159,9 +173,17 @@ export function FittingRoomModal() {
                   exit={{ opacity: 0 }}
                   className="grid gap-6 lg:grid-cols-2 lg:gap-8"
                 >
-                  <ImageUploader
-                    value={userImage}
-                    onChange={setUserImage}
+                  <UserInputPanel
+                    mode={inputMode}
+                    onModeChange={setInputMode}
+                    allowPhotoUpload={roomConfig.allowPhotoUpload}
+                    allowMeasurements={roomConfig.allowMeasurements}
+                    measurementFields={roomConfig.measurementFields}
+                    userImage={userImage}
+                    onUserImageChange={setUserImage}
+                    measurements={bodyMeasurements}
+                    onMeasurementsChange={setBodyMeasurements}
+                    measurementErrors={measurementErrors}
                     isAr={isAr}
                     disabled={isProcessing}
                   />
@@ -176,12 +198,12 @@ export function FittingRoomModal() {
                     />
 
                     {selectedGarment ? (
-                      <div className="hidden lg:block overflow-hidden rounded-2xl border border-border/40 bg-muted/10">
-                        <div className="aspect-[4/5] max-h-[280px]">
+                      <div className="hidden lg:block overflow-hidden rounded-2xl border border-border/40 bg-card">
+                        <div className="relative aspect-[4/5] max-h-[280px] w-full overflow-hidden bg-muted">
                           <img
                             src={selectedGarment.imageUrl}
                             alt={selectedGarment.title}
-                            className="h-full w-full object-cover"
+                            className="absolute inset-0 h-full w-full object-cover object-center"
                           />
                         </div>
                         <div className="p-3 space-y-1">
@@ -215,15 +237,24 @@ export function FittingRoomModal() {
           </div>
 
           {!showResult && !isProcessing && garments.length > 0 ? (
-            <footer className="shrink-0 border-t border-white/10 px-5 py-4 sm:px-6 flex flex-wrap items-center justify-between gap-3">
+            <footer className="shrink-0 border-t border-border bg-background px-5 py-4 sm:px-6 flex flex-wrap items-center justify-between gap-3">
               <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                <ScanFace className="h-3.5 w-3.5" />
-                {isAr ? "صورة واضحة للجسم كاملاً تعطي أفضل نتيجة" : "A clear full-body photo gives the best result"}
+                {inputMode === "measurements" ? (
+                  <>
+                    <Ruler className="h-3.5 w-3.5" />
+                    {isAr ? "أدخل قياساتك بدقة للحصول على توصية مقاس أدق" : "Enter accurate measurements for a better size recommendation"}
+                  </>
+                ) : (
+                  <>
+                    <ScanFace className="h-3.5 w-3.5" />
+                    {isAr ? "صورة واضحة للجسم كاملاً تعطي أفضل نتيجة" : "A clear full-body photo gives the best result"}
+                  </>
+                )}
               </p>
               <Button
                 type="button"
                 className="btn-gold rounded-full gap-2 min-w-[160px]"
-                disabled={!userImage || !selectedGarment}
+                disabled={!canStart}
                 onClick={() => void runTryOn(isAr)}
               >
                 <Wand2 className="h-4 w-4" />
@@ -233,7 +264,7 @@ export function FittingRoomModal() {
           ) : null}
 
           {isProcessing ? (
-            <footer className="shrink-0 border-t border-white/10 px-5 py-3 text-center text-xs text-muted-foreground flex items-center justify-center gap-2">
+            <footer className="shrink-0 border-t border-border bg-background px-5 py-3 text-center text-xs text-muted-foreground flex items-center justify-center gap-2">
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
               {isAr ? "لا تغلق النافذة أثناء المعالجة" : "Please keep this window open while processing"}
             </footer>
