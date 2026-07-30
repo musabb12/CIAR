@@ -1,6 +1,25 @@
 import type { BodyMeasurements } from "@/lib/virtual-fitting/types"
+import { defaultGenderOptions } from "@/lib/fitting-room-config"
 
 const LETTER_SIZES = ["XS", "S", "M", "L", "XL", "XXL", "XXXL"]
+
+const GENDER_LABELS: Record<string, { ar: string; en: string }> = Object.fromEntries(
+  defaultGenderOptions().map((opt) => [opt.value, { ar: opt.labelAr, en: opt.labelEn }])
+)
+
+function isChildProfile(measurements: BodyMeasurements): boolean {
+  const gender = String(measurements.gender || "")
+  const age = Number(measurements.age) || 0
+  return gender === "boy" || gender === "girl" || (age > 0 && age < 14)
+}
+
+function sizeIndexOffset(measurements: BodyMeasurements): number {
+  const gender = String(measurements.gender || "")
+  if (gender === "boy" || gender === "girl") return -2
+  if (gender === "young_female") return -1
+  if (isChildProfile(measurements)) return -2
+  return 0
+}
 
 export function recommendGarmentSize(
   measurements: BodyMeasurements,
@@ -10,25 +29,38 @@ export function recommendGarmentSize(
   const weight = Number(measurements.weight) || 70
   const chest = Number(measurements.chest) || 0
   const waist = Number(measurements.waist) || 0
+  const offset = sizeIndexOffset(measurements)
+  const child = isChildProfile(measurements)
 
   const sizes = availableSizes.filter(Boolean)
   if (sizes.length === 0) {
     const bmi = weight / Math.pow(height / 100, 2)
-    if (bmi < 20) return { size: "S", notes: "Based on height/weight estimate" }
-    if (bmi < 26) return { size: "M", notes: "Based on height/weight estimate" }
-    if (bmi < 30) return { size: "L", notes: "Based on height/weight estimate" }
-    return { size: "XL", notes: "Based on height/weight estimate" }
+    let index = 2
+    if (bmi < 20) index = 0
+    else if (bmi < 26) index = 1
+    else if (bmi < 30) index = 2
+    else index = 3
+    index = Math.max(0, Math.min(3, index + offset))
+    const fallback = ["S", "M", "L", "XL"][index] || "M"
+    return {
+      size: fallback,
+      notes: child ? "Based on age, gender, and body estimate" : "Based on height/weight estimate",
+    }
   }
 
   const numericSizes = sizes
     .map((s) => ({ raw: s, value: Number(s) }))
     .filter((s) => !Number.isNaN(s.value))
   if (numericSizes.length > 0) {
-    const target = Math.round(height / 3 + (weight - 70) * 0.15)
+    let target = Math.round(height / 3 + (weight - 70) * 0.15)
+    if (child) target = Math.round(target * 0.82)
     const best = numericSizes.reduce((prev, curr) =>
       Math.abs(curr.value - target) < Math.abs(prev.value - target) ? curr : prev
     )
-    return { size: best.raw, notes: "Based on height, weight, and numeric sizing" }
+    return {
+      size: best.raw,
+      notes: child ? "Based on age, gender, and numeric sizing" : "Based on height, weight, and numeric sizing",
+    }
   }
 
   const letterAvailable = sizes.filter((s) => LETTER_SIZES.includes(s.toUpperCase()))
@@ -57,8 +89,11 @@ export function recommendGarmentSize(
     else index = 4
   }
 
-  index = Math.max(0, Math.min(pool.length - 1, index))
-  return { size: pool[index], notes: "Based on body measurements" }
+  index = Math.max(0, Math.min(pool.length - 1, index + offset))
+  return {
+    size: pool[index],
+    notes: child ? "Based on age, gender, and body measurements" : "Based on body measurements",
+  }
 }
 
 export function formatMeasurementsSummary(
@@ -66,6 +101,8 @@ export function formatMeasurementsSummary(
   isAr: boolean
 ): string {
   const labels: Record<string, { ar: string; en: string }> = {
+    age: { ar: "العمر", en: "Age" },
+    gender: { ar: "الجنس", en: "Gender" },
     height: { ar: "الطول", en: "Height" },
     weight: { ar: "الوزن", en: "Weight" },
     chest: { ar: "الصدر", en: "Chest" },
@@ -82,6 +119,13 @@ export function formatMeasurementsSummary(
     .filter(([, value]) => String(value).trim() !== "")
     .map(([key, value]) => {
       const label = labels[key]?.[isAr ? "ar" : "en"] || key
+      if (key === "gender") {
+        const genderLabel = GENDER_LABELS[String(value)]?.[isAr ? "ar" : "en"] || String(value)
+        return `${label}: ${genderLabel}`
+      }
+      if (key === "age") {
+        return `${label}: ${value}${isAr ? " سنة" : " yrs"}`
+      }
       return `${label}: ${value}`
     })
     .join(" · ")

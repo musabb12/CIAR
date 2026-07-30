@@ -12,7 +12,8 @@ import type {
 import type { FittingRoomMeasurementField } from "@/lib/fitting-room-config"
 import { fileToBase64 } from "@/lib/virtual-fitting/validate-user-image"
 import { submitVirtualTryOn, VirtualFittingError } from "@/lib/virtual-fitting/client-service"
-import { validateBodyMeasurements } from "@/components/fitting-room/BodyMeasurementsForm"
+import { validateBodyMeasurements, pickBodyMeasurementValues } from "@/components/fitting-room/BodyMeasurementsForm"
+import { splitMeasurementFields, normalizeMeasurementFields, defaultMeasurementFields } from "@/lib/fitting-room-config"
 
 type FittingRoomState = {
   isOpen: boolean
@@ -65,7 +66,7 @@ type FittingRoomContextValue = {
 const defaultRoomConfig: RoomConfig = {
   allowPhotoUpload: true,
   allowMeasurements: true,
-  measurementFields: [],
+  measurementFields: defaultMeasurementFields(),
 }
 
 const initialState: FittingRoomState = {
@@ -173,7 +174,9 @@ export function FittingRoomProvider({ children }: { children: React.ReactNode })
         setRoomConfig({
           allowPhotoUpload: d.allowPhotoUpload !== false,
           allowMeasurements: d.allowMeasurements !== false,
-          measurementFields: Array.isArray(d.measurementFields) ? d.measurementFields : [],
+          measurementFields: normalizeMeasurementFields(
+            Array.isArray(d.measurementFields) ? d.measurementFields : []
+          ),
         })
       })
       .catch(() => {
@@ -234,6 +237,9 @@ export function FittingRoomProvider({ children }: { children: React.ReactNode })
       }
 
       const mode = state.inputMode
+      const { profileFields, bodyFields } = splitMeasurementFields(roomConfig.measurementFields)
+      const profileValues = pickBodyMeasurementValues(profileFields, state.bodyMeasurements)
+
       if (mode === "photo") {
         if (!state.userImage) {
           dispatch({
@@ -242,8 +248,21 @@ export function FittingRoomProvider({ children }: { children: React.ReactNode })
           })
           return
         }
+        const profileValidation = validateBodyMeasurements(profileFields, state.bodyMeasurements, isAr)
+        if (!profileValidation.ok) {
+          dispatch({ type: "SET_MEASUREMENT_ERRORS", errors: profileValidation.errors })
+          dispatch({
+            type: "SET_ERROR",
+            error: isAr ? "يرجى تعبئة العمر والجنس" : "Please fill in age and gender",
+          })
+          return
+        }
       } else {
-        const validation = validateBodyMeasurements(roomConfig.measurementFields, state.bodyMeasurements, isAr)
+        const validation = validateBodyMeasurements(
+          [...profileFields, ...bodyFields],
+          state.bodyMeasurements,
+          isAr
+        )
         if (!validation.ok) {
           dispatch({ type: "SET_MEASUREMENT_ERRORS", errors: validation.errors })
           dispatch({
@@ -278,6 +297,7 @@ export function FittingRoomProvider({ children }: { children: React.ReactNode })
                   garmentImageUrl: selectedGarment.imageUrl,
                   garmentId: selectedGarment.id,
                   locale: isAr ? "ar" : "en",
+                  bodyMeasurements: profileValues,
                 }
               : {
                   inputMode: "measurements" as const,
